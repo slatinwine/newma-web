@@ -1,0 +1,8 @@
+# newma 运行时产物（会话数据、插件目录、日志）
+.kode/
+.newma/
+plugins/
+*.log
+nohup.out
+__pycache__/
+.DS_Store
