@@ -27,8 +27,15 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
-# 2) 对外桥接服务器
+# 2) 对外桥接服务器（Windows 下 python3 可能是 Store 占位符，挑一个能真跑的）
+PYTHON=""
+for cand in python python3; do
+  if command -v "$cand" >/dev/null 2>&1 && "$cand" -V 2>&1 | grep -q '^Python'; then
+    PYTHON="$cand"; break
+  fi
+done
+[ -n "$PYTHON" ] || { echo "❌ 未找到可用的 Python"; exit 1; }
 echo "🌐 Newma Chat: http://127.0.0.1:${PORT}/"
-python3 "$DIR/server.py" "$PORT" &
+"$PYTHON" "$DIR/server.py" "$PORT" &
 BRIDGE_PID=$!
 wait "$BRIDGE_PID"

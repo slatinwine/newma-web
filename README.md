@@ -21,7 +21,8 @@ cd ~/newma-web
 - `public/index.html` — 单文件聊天前端（无构建、无依赖）。
 - `server.py` — Python 桥接服务器（仅标准库）：伺服页面、提供
   `/api/local/skills` 与 `/api/local/plugins` 两个本地目录 API、
-  把 `/health` `/api/status` `/api/execute` `/api/clear` 反代到内部 newma。
+  把 `/health` `/api/status` `/api/execute` `/api/clear` 反代到内部 newma、
+  并管理会话工作区实例（见下文）。
 - `start.sh` — 一键启动：内部 `newma --web`（3011，仅本机）+ 对外桥（3010）。
 
 ## 侧栏入口
@@ -32,6 +33,29 @@ cd ~/newma-web
 - **🛍 插件市场**：列出项目 `.kode/plugins/` 已装插件与 newma 内置插件；
   空态时提示 `newma-create-plugin` 创建方法。
 
+## 对话交互
+
+- **智能选项**：AI 回复中出现"让用户选"的列表（`A) xxx`、`1、xxx`、`- xxx`
+  等格式，且上下文有"选择/倾向/哪种"等提问语气）时，回复下方自动渲染成
+  可点选项 chips。点击即把 `我选择：A）xxx` 作为新消息发回 newma，
+  无需手动输入；上一轮的选项在下一条消息发出后自动收起。普通解释性
+  列表、代码块内的列表不会被误判（有提问语境门控 + 数量/长度限制）。
+- **🔁 换个回答**：最后一条 AI 回复下方的快捷操作，丢弃该回复并原样重发
+  上一条用户消息（newma 每条独立处理，重发即重新生成）。
+
+## 会话工作区（多目录）
+
+每个会话可绑定一个**工作区目录**（输入框左侧 📁 按钮选择，侧栏会话名旁
+显示徽标）。绑定后，该会话的消息由桥在对应目录下按需启动的独立
+`newma --web -d <目录>` 实例处理 —— AI 的命令都在该目录里执行。
+
+- 未绑定的会话走 `start.sh` 启动的默认实例（3011，工作目录为 newma-web 所在目录）。
+- 实例按需懒启动（首次发消息时），空闲 30 分钟自动回收；重启透明化。
+- 请求通过 GET `?ws=<目录>` 或 POST body 的 `workspace` 字段路由；
+  另有 `POST /api/workspace/ensure`（预热/校验目录）与 `GET /api/workspaces`
+  （列出运行中的实例）两个桥端点。
+- 环境变量 `NEWMA_BIN` 可指定 newma 可执行文件（默认 `newma`，走 PATH）。
+
 ## 工作原理
 
 newma `--web` 模式的协议（`src/loop/frontends/web-frontend.ts`）：
@@ -39,9 +63,11 @@ newma `--web` 模式的协议（`src/loop/frontends/web-frontend.ts`）：
 | 端点 | 用途 |
 |---|---|
 | `GET /` | 伺服 `public/index.html`（本页面前端） |
-| `POST /api/execute` | 提交消息，body: `{"requirement":"...","mode":"chat"}` |
-| `GET /api/status` | 轮询 `outputBuffer`（每行一个 JSON 事件） |
-| `GET /health` | 健康检查（侧栏底部状态点） |
+| `POST /api/execute` | 提交消息，body: `{"requirement":"...","mode":"chat","workspace":"可选工作区目录"}` |
+| `GET /api/status` | 轮询 `outputBuffer`（每行一个 JSON 事件），可带 `?ws=` 指定工作区 |
+| `POST /api/workspace/ensure` | 桥端点：确保某工作区的 newma 实例已启动（不存在则启动） |
+| `GET /api/workspaces` | 桥端点：列出运行中的工作区实例 |
+| `GET /health` | 健康检查（侧栏底部状态点），可带 `?ws=` 检查对应实例 |
 | `POST /api/clear` | 清空输出缓冲（前端自动管理，一般无需手动调） |
 
 前端轮询 `/api/status` 增量消费 `outputBuffer`：`type:"output"` 且内容

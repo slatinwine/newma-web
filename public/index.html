@@ -219,6 +219,28 @@ button { font-family: inherit; cursor: pointer; }
 .thinking .dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes blink { 0%, 70%, 100% { opacity: .25; } 35% { opacity: 1; } }
 
+/* 选项 chips 与消息操作（点击回传 newma） */
+.turn-ui { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 10px; }
+.option-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.option-chip {
+  display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  border-radius: 999px; padding: 5px 14px 5px 6px; font-size: 13px; text-align: left;
+  transition: border-color .15s, color .15s, background .15s, transform .05s;
+}
+.option-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--input-bg); }
+.option-chip:active { transform: scale(.98); }
+.option-chip .lbl {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent); color: var(--on-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+.option-chip .txt { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turn-actions { display: flex; gap: 4px; }
+.act-btn { border: none; background: none; color: var(--text-2); font-size: 12px; padding: 3px 8px; border-radius: 7px; }
+.act-btn:hover { color: var(--accent); background: var(--input-bg); }
+
 /* ---------- 输入区 ---------- */
 #input-zone { flex-shrink: 0; padding: 8px 20px 14px; }
 #input-card {
@@ -295,25 +317,55 @@ button { font-family: inherit; cursor: pointer; }
 .drawer-empty { text-align: center; color: var(--text-2); font-size: 13px; padding: 26px 12px; line-height: 1.8; }
 .drawer-empty code { background: var(--input-bg); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; font-size: 12px; }
 
-/* 设置弹窗 */
-#modal-mask {
+/* 设置 / 工作区弹窗 */
+#modal-mask, #ws-mask {
   position: fixed; inset: 0; background: rgba(0,0,0,.4);
   display: none; align-items: center; justify-content: center; z-index: 50;
 }
-#modal-mask.show { display: flex; }
-#modal {
+#modal-mask.show, #ws-mask.show { display: flex; }
+.modal {
   background: var(--bg); border-radius: 14px; padding: 22px;
   width: min(420px, 92vw); border: 1px solid var(--border);
 }
-#modal h3 { font-size: 16px; margin-bottom: 14px; }
-#modal label { display: block; font-size: 13px; color: var(--text-2); margin: 10px 0 5px; }
-#modal input {
+.modal h3 { font-size: 16px; margin-bottom: 14px; }
+.modal label { display: block; font-size: 13px; color: var(--text-2); margin: 10px 0 5px; }
+.modal input {
   width: 100%; border: 1px solid var(--border); border-radius: 8px;
   padding: 9px 10px; font-size: 14px; background: var(--input-bg); color: var(--text);
 }
-#modal .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
-#modal .row button { border-radius: 9px; padding: 8px 16px; font-size: 13px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-#modal .row button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.modal .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+.modal .row button { border-radius: 9px; padding: 8px 16px; font-size: 13px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.modal .row button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+
+/* 会话工作区 */
+#btn-ws {
+  flex-shrink: 0; max-width: 150px;
+  border: 1px solid var(--border); background: transparent; color: var(--text-2);
+  border-radius: 10px; padding: 8px 10px; font-size: 12.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#btn-ws:hover { color: var(--accent); border-color: var(--accent); }
+.ws-sub { font-size: 12.5px; color: var(--text-2); margin: -6px 0 12px; line-height: 1.6; }
+#ws-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.ws-row {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 9px 12px; cursor: pointer; background: var(--input-bg);
+}
+.ws-row:hover { border-color: var(--text-2); }
+.ws-row.active { border-color: var(--accent); color: var(--accent); }
+.ws-row .n { font-size: 13.5px; font-weight: 600; }
+.ws-row .p { font-size: 11.5px; color: var(--text-2); margin-top: 3px; word-break: break-all; }
+.ws-add { display: flex; gap: 8px; }
+.ws-add input { flex: 1; }
+.ws-add button {
+  flex-shrink: 0; border-radius: 8px; padding: 8px 14px; font-size: 13px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+}
+.ws-add button:hover { border-color: var(--accent); color: var(--accent); }
+.conv-item .ws-tag {
+  font-size: 10.5px; color: var(--text-2); flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: 6px; padding: 0 5px;
+}
 
 @media (max-width: 720px) {
   #sidebar { position: fixed; z-index: 40; height: 100%; }
@@ -358,6 +410,7 @@ button { font-family: inherit; cursor: pointer; }
   <div id="input-zone">
     <div id="input-card">
       <div id="input-row">
+        <button id="btn-ws" title="会话工作区">📁 默认</button>
         <textarea id="prompt" rows="1" placeholder="给 Newma 发送消息…（Enter 发送，Shift+Enter 换行）"></textarea>
         <button id="btn-send" title="发送">➤</button>
       </div>
@@ -376,7 +429,7 @@ button { font-family: inherit; cursor: pointer; }
 </aside>
 
 <div id="modal-mask">
-  <div id="modal">
+  <div id="modal" class="modal">
     <h3>设置</h3>
     <label>Newma Web 服务地址（newma --web 的地址）</label>
     <input id="cfg-api" placeholder="http://127.0.0.1:3010">
@@ -387,10 +440,24 @@ button { font-family: inherit; cursor: pointer; }
   </div>
 </div>
 
+<div id="ws-mask">
+  <div class="modal">
+    <h3>会话工作区</h3>
+    <div class="ws-sub">本会话的消息将交给所选目录下启动的独立 newma 实例处理（命令在该目录中执行）。</div>
+    <div id="ws-list"></div>
+    <label>添加工作区（目录路径）</label>
+    <div class="ws-add">
+      <input id="ws-input" placeholder="例如 D:\Git\my-project">
+      <button id="ws-add">添加</button>
+    </div>
+    <div class="row"><button id="ws-close">关闭</button></div>
+  </div>
+</div>
+
 <script>
 /* ============ 状态 ============ */
 const $ = s => document.querySelector(s);
-const LS_CONV = 'newma.convs.v1', LS_CUR = 'newma.cur.v1', LS_API = 'newma.api.v1', LS_THEME = 'newma.theme.v1';
+const LS_CONV = 'newma.convs.v1', LS_CUR = 'newma.cur.v1', LS_API = 'newma.api.v1', LS_THEME = 'newma.theme.v1', LS_WS = 'newma.wss.v1', LS_PEND = 'newma.pendws.v1';
 let convs = JSON.parse(localStorage.getItem(LS_CONV) || '[]');
 let curId = localStorage.getItem(LS_CUR) || null;
 let busy = false;            // 是否正在等待 AI 回复
@@ -398,13 +465,37 @@ let readIndex = 0;           // outputBuffer 已消费位置
 let pollTimer = null;
 let streamEl = null;         // 当前正在流入的 AI 消息 DOM 容器
 let streamText = '';
+let streamError = '';        // newma 回传的错误事件（type:"error"，无 Done 收尾）
 let pollStart = 0;
+let pollWs = '';             // 本轮轮询锁定的工作区（发送时捕获）
+let pendingWs = localStorage.getItem(LS_PEND) || '';   // 尚无会话时选中的工作区，随首条消息落到会话上
 
 function api() { return localStorage.getItem(LS_API) || (location.protocol.startsWith('http') ? '' : 'http://127.0.0.1:3010'); }
 function cur() { return convs.find(c => c.id === curId) || null; }
 function save() {
   localStorage.setItem(LS_CONV, JSON.stringify(convs));
   if (curId) localStorage.setItem(LS_CUR, curId);
+}
+
+/* ============ 会话工作区 ============ */
+function wsRecents() { try { return JSON.parse(localStorage.getItem(LS_WS) || '[]'); } catch (e) { return []; } }
+function wsBase(p) { return (p || '').replace(/[\\/]+$/, '').split(/[\\/]/).pop(); }
+function curWs() { if (busy) return pollWs; const c = cur(); return c ? (c.ws || '') : pendingWs; }
+function wsQ(ws) { return ws ? '?ws=' + encodeURIComponent(ws) : ''; }
+async function ensureWs(ws) {
+  const r = await fetch(api() + '/api/workspace/ensure', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workspace: ws }),
+    signal: AbortSignal.timeout(70000),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+  return d;
+}
+function updateWsBtn() {
+  const ws = curWs();
+  $('#btn-ws').textContent = '📁 ' + (wsBase(ws) || '默认');
+  $('#btn-ws').title = ws ? '本会话工作区：' + ws : '本会话使用 newma 启动目录，点击可绑定工作区';
 }
 
 /* ============ Markdown ============ */
@@ -447,9 +538,17 @@ function renderAll() {
   welcomeEl.style.display = (c && c.messages.length) ? 'none' : '';
   chatEl.style.display = (c && c.messages.length) ? '' : 'none';
   $('#topbar-title').textContent = c ? c.title : 'Newma Chat';
-  if (c) c.messages.forEach(m => appendMsgDom(m.role, m.content));
+  let lastBw = null, lastMsg = null;
+  if (c) c.messages.forEach(m => {
+    const bw = appendMsgDom(m.role, m.content);
+    if (m.role === 'assistant') { lastBw = bw; lastMsg = m; }
+  });
   renderConvList();
   toBottom(true);
+  updateWsBtn();
+  // 选项/操作只挂在会话结尾：用户已发出下一条消息时，旧选项不再显示
+  const last = c && c.messages[c.messages.length - 1];
+  if (lastMsg && lastMsg === last && !busy) attachTurnUI(lastBw, lastMsg.content);
 }
 function appendMsgDom(role, content) {
   welcomeEl.style.display = 'none';
@@ -498,6 +597,13 @@ function renderConvList() {
     const d = document.createElement('div');
     d.className = 'conv-item' + (c.id === curId ? ' active' : '');
     d.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis">${c.title.replace(/</g,'&lt;')}</span><button class="del" title="删除">✕</button>`;
+    if (c.ws) {
+      const tag = document.createElement('span');
+      tag.className = 'ws-tag';
+      tag.textContent = '📁 ' + (wsBase(c.ws) || '默认');
+      tag.title = c.ws;
+      d.insertBefore(tag, d.querySelector('.del'));
+    }
     d.onclick = e => {
       if (e.target.classList.contains('del')) {
         if (busy) return alert('回复进行中，稍后再删除会话');
@@ -511,14 +617,108 @@ function renderConvList() {
   });
 }
 
+/* ============ 智能选项：识别 AI 给出的选项，点击回传 newma ============ */
+const OPT_ITEM = /^\s*(?:[-*•]\s+|\(?\s*([A-Za-z]|\d{1,2})\s*[.、)）]\s*|（([A-Za-z0-9]{1,2})）\s*)(.+)$/;
+// 提问语境门控：只有上下文里出现"让用户选"的语气，才把列表渲染成可点选项
+const OPT_CUE_ANY = /选择|选哪|哪[个种款一]|更?倾向|喜欢哪|你来定|你决定|告诉我.{0,8}(字母|数字|序号)|回复.{0,8}(字母|数字|序号|选项)|pick|choose|which one/i;
+const OPT_CUE_STRONG = /选|倾向|喜欢|决定|pick|choose/i;
+
+function detectOptions(text) {
+  const lines = String(text || '').split('\n');
+  let inFence = false;
+  const blocks = [];
+  let b = null;
+  lines.forEach((line, i) => {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      if (b) { blocks.push(b); b = null; }
+      return;
+    }
+    if (inFence) return;
+    const m = line.match(OPT_ITEM);
+    if (m) {
+      if (!b) b = { start: i, items: [] };
+      b.items.push({
+        label: (m[1] || m[2] || '').toString(),
+        text: m[3].trim().replace(/\*\*([^*]+)\*\*/g, '$1').replace(/^`([^`]*)`$/, '$1'),
+      });
+      b.end = i;
+    } else if (b) { blocks.push(b); b = null; }
+  });
+  if (b) blocks.push(b);
+  if (!blocks.length) return [];
+  const block = blocks[blocks.length - 1];
+  if (block.items.length < 2 || block.items.length > 8) return [];
+  if (block.items.some(o => !o.text || o.text.length > 100)) return [];
+  const before = lines.slice(Math.max(0, block.start - 4), block.start).join(' ').slice(-160);
+  const after = lines.slice(block.end + 1).join(' ').slice(0, 160);
+  const cue = block.items.some(o => o.label) ? OPT_CUE_ANY : OPT_CUE_STRONG;
+  if (!cue.test(before) && !cue.test(after)) return [];
+  return block.items;
+}
+
+/* 在最后一条 AI 消息下方挂选项 chips + 快捷操作 */
+function attachTurnUI(bw, text) {
+  if (!bw) return;
+  bw.querySelectorAll('.turn-ui').forEach(el => el.remove());
+  const ui = document.createElement('div');
+  ui.className = 'turn-ui';
+  const opts = detectOptions(text);
+  if (opts.length) {
+    const row = document.createElement('div');
+    row.className = 'option-row';
+    opts.forEach(o => {
+      const chip = document.createElement('button');
+      chip.className = 'option-chip';
+      if (o.label) {
+        chip.innerHTML = `<span class="lbl">${esc(o.label.toUpperCase())}</span><span class="txt">${esc(o.text)}</span>`;
+      } else {
+        chip.innerHTML = `<span class="txt">${esc(o.text)}</span>`;
+        chip.style.padding = '5px 14px';
+      }
+      chip.title = '点击把该选项发送给 Newma';
+      chip.onclick = () => send(o.label ? `我选择：${o.label}）${o.text}` : `我选择：${o.text}`);
+      row.appendChild(chip);
+    });
+    ui.appendChild(row);
+  }
+  const actions = document.createElement('div');
+  actions.className = 'turn-actions';
+  const reg = document.createElement('button');
+  reg.className = 'act-btn';
+  reg.textContent = '🔁 换个回答';
+  reg.title = '重新生成上一条回复';
+  reg.onclick = regenerate;
+  actions.appendChild(reg);
+  ui.appendChild(actions);
+  bw.appendChild(ui);
+}
+
+/* 重新生成：丢弃最后一条 AI 回复，把上一条用户消息原样重发 */
+function regenerate() {
+  if (busy) return;
+  const c = cur();
+  if (!c || !c.messages.length || c.messages[c.messages.length - 1].role !== 'assistant') return;
+  const lastUser = [...c.messages].reverse().find(m => m.role === 'user');
+  if (!lastUser) return;
+  c.messages.pop();
+  save();
+  send(lastUser.content, { skipPush: true });
+}
+
 /* ============ 与 newma web 通信 ============ */
 async function health() {
   const dot = $('#srv-dot'), label = $('#srv-label');
+  const ws = curWs();
   try {
-    const r = await fetch(api() + '/health', { signal: AbortSignal.timeout(4000) });
-    const ok = r.ok;
-    dot.className = 'srv-dot ' + (ok ? 'ok' : 'bad');
-    label.textContent = ok ? 'newma 服务在线' : '服务异常';
+    const r = await fetch(api() + '/health' + wsQ(ws), { signal: AbortSignal.timeout(4000) });
+    if (r.ok) {
+      dot.className = 'srv-dot ok';
+      label.textContent = ws ? 'newma 在线 · ' + (wsBase(ws) || '默认') : 'newma 服务在线';
+    } else {
+      dot.className = 'srv-dot bad';
+      label.textContent = ws ? '工作区未启动' : '服务异常';
+    }
   } catch (e) {
     dot.className = 'srv-dot bad';
     label.textContent = '服务未连接';
@@ -528,6 +728,15 @@ async function health() {
 function consumeLine(line) {
   let ev;
   try { ev = JSON.parse(line); } catch (e) { return; }
+  // 错误事件：newma 出错时不发 Done，需立即结算本回合
+  if (ev.type === 'error') {
+    const m = typeof ev.content === 'string' && ev.content.trim()
+      ? ev.content.trim().replace(/^Chat error:\s*/, '')
+      : 'Newma 处理出错';
+    if (!streamError) streamError = m;
+    finishTurn();
+    return;
+  }
   if (ev.type !== 'output' || typeof ev.content !== 'string') {
     if (ev.type === 'status') return;       // 迭代状态，静默
     return;
@@ -550,13 +759,20 @@ function finishTurn() {
   if (streamEl) {
     const th = streamEl.querySelector('.thinking');
     if (th) th.remove();
-    if (streamText && c) {
+    if (streamError) {
+      const e = document.createElement('div');
+      e.className = 'err';
+      e.textContent = streamError;
+      streamEl.appendChild(e);
+      toBottom();
+    } else if (streamText && c) {
       c.messages.push({ role: 'assistant', content: streamText });
       save();
       renderStream();
+      attachTurnUI(streamEl, streamText);
     }
   }
-  streamEl = null; streamText = '';
+  streamEl = null; streamText = ''; streamError = '';
   setBusy(false);
 }
 
@@ -564,7 +780,7 @@ function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = nul
 
 async function pollStatus() {
   try {
-    const r = await fetch(api() + '/api/status', { signal: AbortSignal.timeout(8000) });
+    const r = await fetch(api() + '/api/status' + wsQ(pollWs), { signal: AbortSignal.timeout(8000) });
     const d = await r.json();
     const buf = d.outputBuffer || [];
     for (let i = readIndex; i < buf.length; i++) consumeLine(buf[i]);
@@ -582,18 +798,21 @@ function setBusy(b) {
   $('#prompt').disabled = false;
 }
 
-async function send(text) {
+async function send(text, opts = {}) {
   text = (text || '').trim();
   if (!text || busy) return;
   try {
     let c = cur();
     if (!c) {
-      c = { id: Date.now().toString(36), title: text.slice(0, 24) || '新对话', messages: [] };
+      c = { id: Date.now().toString(36), title: text.slice(0, 24) || '新对话', messages: [], ws: pendingWs || undefined };
+      pendingWs = '';
+      localStorage.removeItem(LS_PEND);
       convs.unshift(c); curId = c.id;
     } else if (c.messages.length === 0) {
       c.title = text.slice(0, 24);
     }
-    c.messages.push({ role: 'user', content: text });
+    // skipPush：重新生成时用户消息已在会话里，不重复入列
+    if (!opts.skipPush) c.messages.push({ role: 'user', content: text });
     save(); renderAll();
     $('#prompt').value = ''; autoGrow();
 
@@ -606,27 +825,38 @@ async function send(text) {
       : text;
     const requirement = '/chat ' + payload;
 
-    streamEl = showThinking(); streamText = ''; toBottom(true);
+    // 本轮轮询锁定当前会话的工作区；绑定工作区时先确保实例已启动
+    pollWs = c.ws || '';
+    if (pollWs) {
+      $('#srv-label').textContent = '工作区启动中…';
+      await ensureWs(pollWs);
+    }
+
+    streamEl = showThinking(); streamText = ''; streamError = ''; toBottom(true);
     setBusy(true);
 
     // 对齐服务器缓冲区基线后发送，避免吃到上一轮残留
-    const s = await fetch(api() + '/api/status', { signal: AbortSignal.timeout(6000) });
+    const s = await fetch(api() + '/api/status' + wsQ(pollWs), { signal: AbortSignal.timeout(6000) });
     const sd = await s.json();
     readIndex = (sd.outputBuffer || []).length;
     const r = await fetch(api() + '/api/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requirement, mode: 'chat' }),
+      body: JSON.stringify({ requirement, mode: 'chat', workspace: pollWs || undefined }),
       signal: AbortSignal.timeout(10000),
     });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!r.ok) {
+      let msg = 'HTTP ' + r.status;
+      try { const d = await r.json(); if (d.error) msg = d.error; } catch (e) {}
+      throw new Error(msg);
+    }
     pollStart = Date.now();
     stopPoll();
     pollTimer = setInterval(pollStatus, 800);
   } catch (e) {
     const bw = streamEl;
     if (bw) { bw.innerHTML = `<div class="content"></div><div class="err">发送失败：${e.message || e}。请确认 newma --web 已启动（设置里可改地址）。</div>`; }
-    streamEl = null; streamText = '';
+    streamEl = null; streamText = ''; streamError = '';
     setBusy(false);
   }
 }
@@ -722,7 +952,9 @@ $('#btn-send').onclick = () => {
 };
 document.querySelectorAll('.suggestion').forEach(b => b.onclick = () => send(b.textContent));
 $('#btn-newchat').onclick = () => {
-  const c = { id: Date.now().toString(36), title: '新对话', messages: [] };
+  const c = { id: Date.now().toString(36), title: '新对话', messages: [], ws: pendingWs || undefined };
+  pendingWs = '';
+  localStorage.removeItem(LS_PEND);
   convs.unshift(c); curId = c.id; save(); renderAll(); promptEl.focus();
 };
 $('#btn-side').onclick = () => $('#sidebar').classList.toggle('hidden');
@@ -738,10 +970,72 @@ $('#modal-save').onclick = () => {
   $('#modal-mask').classList.remove('show'); health();
 };
 
+/* ============ 工作区选择弹窗 ============ */
+function openWsModal() {
+  const list = $('#ws-list');
+  list.innerHTML = '';
+  const active = curWs();
+  const mk = (label, path) => {
+    const row = document.createElement('div');
+    row.className = 'ws-row' + ((path || '') === (active || '') ? ' active' : '');
+    const n = document.createElement('div');
+    n.className = 'n';
+    n.textContent = label;
+    row.appendChild(n);
+    if (path) {
+      const p = document.createElement('div');
+      p.className = 'p';
+      p.textContent = path;
+      row.appendChild(p);
+    }
+    row.onclick = () => {
+      applyWs(path);
+      $('#ws-mask').classList.remove('show');
+    };
+    list.appendChild(row);
+  };
+  mk('默认（newma-web 启动目录）', '');
+  wsRecents().forEach(p => mk(wsBase(p) || p, p));
+  $('#ws-mask').classList.add('show');
+  $('#ws-input').value = '';
+}
+function applyWs(path) {
+  path = (path || '').trim();
+  const c = cur();
+  if (c) { c.ws = path || undefined; save(); }
+  else {
+    pendingWs = path;
+    if (path) localStorage.setItem(LS_PEND, path); else localStorage.removeItem(LS_PEND);
+  }
+  if (path) {
+    const rec = wsRecents().filter(x => x !== path);
+    rec.unshift(path);
+    localStorage.setItem(LS_WS, JSON.stringify(rec.slice(0, 8)));
+  }
+  updateWsBtn(); renderConvList(); health();
+  if (path) {
+    // 预热实例，失败只提示不阻断（发消息时还会再 ensure）
+    ensureWs(path).then(() => health()).catch(e => alert('工作区启动失败：' + (e.message || e)));
+  }
+}
+$('#btn-ws').onclick = openWsModal;
+$('#ws-close').onclick = () => $('#ws-mask').classList.remove('show');
+$('#ws-mask').onclick = e => { if (e.target === $('#ws-mask')) $('#ws-mask').classList.remove('show'); };
+$('#ws-add').onclick = () => {
+  const v = $('#ws-input').value.trim();
+  if (!v) return;
+  applyWs(v);
+  $('#ws-mask').classList.remove('show');
+};
+$('#ws-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); $('#ws-add').click(); }
+});
+
 /* ============ 启动 ============ */
 if (localStorage.getItem(LS_THEME) === 'dark') document.documentElement.classList.add('dark');
 if (!curId && convs.length) curId = convs[0].id;
 renderAll();
+updateWsBtn();
 health(); setInterval(health, 5000);
 
 // 加载 markdown 渲染库（CDN 失败则回退纯文本）

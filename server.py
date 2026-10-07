@@ -6,20 +6,34 @@
 - /api/local/skills   读取 ~/.kode/skills 与项目 .kode/skills 的 SKILL.md front-matter
 - /api/local/plugins  读取项目 .kode/plugins 与 newma 内置插件清单
 - /health /api/status /api/execute /api/clear 反代到内部 newma --web（默认 3011）
+- 会话工作区：请求带 ws 参数（GET）或 workspace 字段（POST JSON）时，
+  按目录懒启动独立 newma --web 实例并路由过去；空闲 30 分钟自动回收。
 """
 import json
 import os
 import re
+import shutil
+import socket
+import subprocess
 import sys
+import threading
+import time
 import urllib.request
 import urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse, parse_qs
 
 PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public")
+PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
 NEWMA_HOST = os.environ.get("NEWMA_INTERNAL", "127.0.0.1:3011")
+NEWMA_BIN = os.environ.get("NEWMA_BIN", "newma")
 HOME_SKILLS = os.path.join(os.path.expanduser("~"), ".kode", "skills")
-PROJ_SKILLS = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".kode", "skills")
-PROJ_PLUGINS = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".kode", "plugins")
+PROJ_SKILLS = os.path.join(PROJ_DIR, ".kode", "skills")
+PROJ_PLUGINS = os.path.join(PROJ_DIR, ".kode", "plugins")
+
+# 工作区实例参数
+SPAWN_TIMEOUT = 60      # 等 /health 就绪的上限（秒）
+IDLE_REAP = 30 * 60     # 空闲实例回收（秒）
 
 # newma 内置插件（src/loop/plugins/，随 CLI 安装，无法从外部目录枚举）
 BUILTIN_PLUGINS = [
@@ -107,6 +121,116 @@ def list_plugins():
     return plugins
 
 
+class WorkspaceManager:
+    """按目录懒启动 / 复用 / 回收独立的 newma --web 实例。
+
+    每个会话可绑定一个工作区目录；绑定后该会话的请求路由到在
+    该目录下启动的专属实例（等价于 newma --web -d <目录>）。
+    """
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.instances = {}   # abspath -> {port, proc, last_used}
+
+    @staticmethod
+    def _free_port():
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+        s.close()
+        return port
+
+    def _spawn(self, ws):
+        port = self._free_port()
+        exe = shutil.which(NEWMA_BIN) or NEWMA_BIN
+        if exe.lower().endswith((".cmd", ".bat")):
+            cmd = ["cmd", "/c", exe, "--web", "--web-port", str(port),
+                   "--web-host", "127.0.0.1", "-d", ws]
+        else:
+            cmd = [exe, "--web", "--web-port", str(port),
+                   "--web-host", "127.0.0.1", "-d", ws]
+        kwargs = {"cwd": ws, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+        if os.name == "nt":
+            kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        try:
+            proc = subprocess.Popen(cmd, **kwargs)
+        except OSError as e:
+            raise RuntimeError(f"无法启动 newma（{NEWMA_BIN}）：{e}")
+        deadline = time.time() + SPAWN_TIMEOUT
+        while time.time() < deadline:
+            if proc.poll() is not None:
+                raise RuntimeError(f"newma 进程启动后立即退出（code {proc.returncode}）")
+            try:
+                with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as r:
+                    if r.status == 200:
+                        return {"port": port, "proc": proc, "last_used": time.time()}
+            except Exception:
+                time.sleep(0.6)
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        raise RuntimeError(f"newma 启动超时（{SPAWN_TIMEOUT}s 内未就绪）")
+
+    def ensure(self, ws):
+        """返回该目录的存活实例，没有则启动。"""
+        ws = os.path.abspath(ws)
+        if not os.path.isdir(ws):
+            raise RuntimeError(f"工作区目录不存在：{ws}")
+        with self.lock:
+            inst = self.instances.get(ws)
+            if inst and inst["proc"].poll() is None:
+                inst["last_used"] = time.time()
+                return inst
+            if inst:
+                try:
+                    inst["proc"].kill()
+                except Exception:
+                    pass
+                del self.instances[ws]
+            inst = self._spawn(ws)
+            self.instances[ws] = inst
+            return inst
+
+    def get(self, ws):
+        """只查找已运行的实例，不启动。"""
+        ws = os.path.abspath(ws)
+        inst = self.instances.get(ws)
+        if inst and inst["proc"].poll() is None:
+            inst["last_used"] = time.time()
+            return inst
+        return None
+
+    def list(self):
+        return [
+            {"workspace": ws, "port": i["port"]}
+            for ws, i in self.instances.items()
+            if i["proc"].poll() is None
+        ]
+
+    def reap(self):
+        with self.lock:
+            for ws, inst in list(self.instances.items()):
+                if time.time() - inst["last_used"] > IDLE_REAP:
+                    try:
+                        inst["proc"].kill()
+                    except Exception:
+                        pass
+                    del self.instances[ws]
+
+
+WS = WorkspaceManager()
+
+
+def _reaper():
+    while True:
+        time.sleep(60)
+        try:
+            WS.reap()
+        except Exception:
+            pass
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -122,14 +246,11 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _proxy(self):
-        length = int(self.headers.get("Content-Length") or 0)
-        data = self.rfile.read(length) if length else None
-        url = f"http://{NEWMA_HOST}{self.path}"
+    def _forward(self, host, data=None):
+        url = f"http://{host}{self.path}"
         req = urllib.request.Request(url, data=data, method=self.command)
-        for h in ("Content-Type",):
-            if self.headers.get(h):
-                req.add_header(h, self.headers[h])
+        if data and self.headers.get("Content-Type"):
+            req.add_header("Content-Type", self.headers["Content-Type"])
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 body = r.read()
@@ -148,6 +269,32 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             self._json({"error": str(e)}, 502)
 
+    def _proxy(self):
+        """反代到 newma。POST JSON body 里的 workspace 字段、GET 上的
+        ?ws= 查询参数会把请求路由到对应工作区的独立实例。"""
+        length = int(self.headers.get("Content-Length") or 0)
+        raw = self.rfile.read(length) if length else None
+        data, ws = raw, ""
+        if raw:
+            try:
+                obj = json.loads(raw.decode("utf-8"))
+                if isinstance(obj, dict):
+                    ws = str(obj.pop("workspace", "") or "").strip()
+                    data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+            except Exception:
+                data = raw
+        if not ws:
+            parsed = urlparse(self.path)
+            ws = (parse_qs(parsed.query).get("ws") or [""])[0].strip()
+        if ws:
+            try:
+                inst = WS.ensure(ws)
+            except Exception as e:
+                self._json({"error": f"工作区启动失败：{e}"}, 502)
+                return
+            return self._forward(f"127.0.0.1:{inst['port']}", data)
+        self._forward(NEWMA_HOST, data)
+
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -157,12 +304,21 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        path = self.path.split("?")[0]
+        parsed = urlparse(self.path)
+        path = parsed.path
+        ws = (parse_qs(parsed.query).get("ws") or [""])[0].strip()
         if path == "/api/local/skills":
             return self._json({"skills": list_skills()})
         if path == "/api/local/plugins":
             return self._json({"plugins": list_plugins(), "builtin": BUILTIN_PLUGINS})
+        if path == "/api/workspaces":
+            return self._json({"workspaces": WS.list(), "default": PROJ_DIR})
         if path in ("/health", "/api/status"):
+            if ws:
+                inst = WS.get(ws)
+                if not inst:
+                    return self._json({"error": "workspace not running"}, 503)
+                return self._forward(f"127.0.0.1:{inst['port']}")
             return self._proxy()
         if path in ("/", "/index.html"):
             f = os.path.join(PUBLIC_DIR, "index.html")
@@ -179,6 +335,20 @@ class Handler(BaseHTTPRequestHandler):
         self._json({"error": "not found"}, 404)
 
     def do_POST(self):
+        if self.path.startswith("/api/workspace/ensure"):
+            length = int(self.headers.get("Content-Length") or 0)
+            try:
+                obj = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+            except Exception:
+                obj = {}
+            ws = str(obj.get("workspace") or "").strip()
+            if not ws:
+                return self._json({"error": "缺少 workspace 字段"}, 400)
+            try:
+                inst = WS.ensure(ws)
+            except Exception as e:
+                return self._json({"error": str(e)}, 502)
+            return self._json({"ok": True, "port": inst["port"], "workspace": os.path.abspath(ws)})
         if self.path.startswith("/api/"):
             return self._proxy()
         self._json({"error": "not found"}, 404)
@@ -186,5 +356,6 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 3010
-    print(f"🌉 Newma Chat bridge: http://127.0.0.1:{port}/  (newma web 内部 {NEWMA_HOST})")
+    threading.Thread(target=_reaper, daemon=True).start()
+    print(f"🌉 Newma Chat bridge: http://127.0.0.1:{port}/  (newma web 内部 {NEWMA_HOST}，工作区实例按需启动)")
     ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
