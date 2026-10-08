@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#d8d5cd">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2333322f'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23d8d5cd' font-family='sans-serif' font-weight='700'%3E%E7%89%9B%3C/text%3E%3C/svg%3E">
 <title>Newma Chat</title>
 <style>
 /* 清水混凝土风格：水泥灰面 + 炭灰强调 + 细腻噪点 */
@@ -175,6 +177,19 @@ button { font-family: inherit; cursor: pointer; }
 }
 .msg.ai .content { font-size: 15px; line-height: 1.75; word-break: break-word; padding-top: 4px; }
 .msg .err { color: var(--danger); font-size: 13px; margin-top: 6px; }
+.msg .edit-box {
+  width: 100%; border: 1px solid var(--accent); border-radius: 10px;
+  background: var(--input-bg); color: var(--text);
+  font: inherit; font-size: 14.5px; line-height: 1.6;
+  padding: 9px 12px; resize: vertical; min-height: 60px; outline: none;
+}
+.msg .edit-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+.msg .edit-row button {
+  border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
+  color: var(--text); font-size: 12.5px; padding: 5px 12px;
+}
+.msg .edit-row button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.conn-hint { color: var(--danger); font-size: 13px; margin-top: 10px; }
 
 /* markdown */
 .msg.ai .content p { margin: 0 0 10px; }
@@ -242,7 +257,7 @@ button { font-family: inherit; cursor: pointer; }
 .act-btn:hover { color: var(--accent); background: var(--input-bg); }
 
 /* ---------- 输入区 ---------- */
-#input-zone { flex-shrink: 0; padding: 8px 20px 14px; }
+#input-zone { flex-shrink: 0; padding: 8px 20px 14px; position: relative; }
 #input-card {
   max-width: 760px; margin: 0 auto;
   background: var(--input-bg); border-radius: 18px;
@@ -366,10 +381,70 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 10.5px; color: var(--text-2); flex-shrink: 0;
   border: 1px solid var(--border); border-radius: 6px; padding: 0 5px;
 }
+#conv-search {
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--input-bg); color: var(--text);
+  padding: 7px 10px; font-size: 12.5px; outline: none; width: 100%;
+}
+#conv-search:focus { border-color: var(--text-2); }
+#conv-search::placeholder { color: var(--text-2); }
+.conv-item .ops { display: flex; gap: 2px; flex-shrink: 0; visibility: hidden; }
+.conv-item:hover .ops { visibility: visible; }
+.conv-item .ops button {
+  border: none; background: none; color: var(--text-2);
+  font-size: 11.5px; padding: 1px 3px; border-radius: 4px;
+}
+.conv-item .ops button:hover { color: var(--accent); }
+.conv-item .del { visibility: hidden; }
+.conv-item:hover .del { visibility: visible; }
+.conv-item input.rename {
+  width: 100%; border: 1px solid var(--accent); border-radius: 5px;
+  background: var(--input-bg); color: var(--text);
+  font-size: 12.5px; padding: 1px 5px; outline: none;
+}
+
+/* toast 提示 */
+#toasts {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  z-index: 200; pointer-events: none;
+}
+.toast {
+  background: var(--accent-strong); color: var(--bg);
+  border-radius: 10px; padding: 9px 16px; font-size: 13px;
+  box-shadow: 0 6px 22px rgba(40, 38, 32, .28);
+  animation: fadein .18s ease; max-width: 78vw; text-align: center;
+}
+.toast.err { background: var(--danger); color: #f4efe9; }
+
+/* 回到底部 */
+#btn-bottom {
+  position: absolute; right: 22px; top: -46px;
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text-2);
+  font-size: 15px; display: none; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(40, 38, 32, .18);
+}
+#btn-bottom.show { display: flex; }
+#btn-bottom:hover { color: var(--accent); border-color: var(--accent); }
+
+/* 流式光标 / 耗时 / 消息操作 */
+.msg.ai .content.streaming::after {
+  content: "▍"; color: var(--text-2); animation: blink 1s steps(1) infinite;
+}
+.thinking .elapsed { opacity: .75; font-variant-numeric: tabular-nums; }
+.msg .msg-ops { display: flex; gap: 2px; margin-top: 4px; opacity: 0; transition: opacity .15s; }
+.msg:hover .msg-ops { opacity: 1; }
+.msg .msg-ops button {
+  border: none; background: none; color: var(--text-2);
+  font-size: 11.5px; padding: 2px 7px; border-radius: 6px;
+}
+.msg .msg-ops button:hover { color: var(--accent); background: var(--input-bg); }
 
 @media (max-width: 720px) {
   #sidebar { position: fixed; z-index: 40; height: 100%; }
   #sidebar:not(.hidden) { box-shadow: 0 0 30px rgba(0,0,0,.3); }
+  #prompt { font-size: 16px; }   /* 防 iOS 聚焦缩放 */
 }
 </style>
 </head>
@@ -378,6 +453,7 @@ button { font-family: inherit; cursor: pointer; }
 <aside id="sidebar">
   <div class="brand"><div class="logo">牛</div>Newma Chat</div>
   <button id="btn-newchat">＋ 开启新对话</button>
+  <input id="conv-search" placeholder="搜索会话…" type="search">
   <div id="conv-list"></div>
   <div class="side-foot">
     <div class="srv-status"><span class="srv-dot" id="srv-dot"></span><span id="srv-label">服务未连接</span></div>
@@ -398,6 +474,7 @@ button { font-family: inherit; cursor: pointer; }
       <h1>Hi，我是 Newma（牛码）</h1>
       <div class="concrete-seams"></div>
       <p>本地 newma CLI 驱动 · 有什么可以帮你？</p>
+      <p id="welcome-hint" class="conn-hint" style="display:none"></p>
       <div class="suggestions">
         <button class="suggestion">用一句话介绍你自己</button>
         <button class="suggestion">写一个 Python 快排，带注释</button>
@@ -408,6 +485,7 @@ button { font-family: inherit; cursor: pointer; }
     <div id="chat" style="display:none"></div>
   </div>
   <div id="input-zone">
+    <button id="btn-bottom" title="回到底部">↓</button>
     <div id="input-card">
       <div id="input-row">
         <button id="btn-ws" title="会话工作区">📁 默认</button>
@@ -418,6 +496,8 @@ button { font-family: inherit; cursor: pointer; }
     <div id="input-note">内容由本地 newma CLI 生成，请注意甄别</div>
   </div>
 </main>
+
+<div id="toasts"></div>
 
 <div id="drawer-mask"></div>
 <aside id="drawer">
@@ -457,7 +537,7 @@ button { font-family: inherit; cursor: pointer; }
 <script>
 /* ============ 状态 ============ */
 const $ = s => document.querySelector(s);
-const LS_CONV = 'newma.convs.v1', LS_CUR = 'newma.cur.v1', LS_API = 'newma.api.v1', LS_THEME = 'newma.theme.v1', LS_WS = 'newma.wss.v1', LS_PEND = 'newma.pendws.v1';
+const LS_CONV = 'newma.convs.v1', LS_CUR = 'newma.cur.v1', LS_API = 'newma.api.v1', LS_THEME = 'newma.theme.v1', LS_WS = 'newma.wss.v1', LS_PEND = 'newma.pendws.v1', LS_DRAFT = 'newma.drafts.v1';
 let convs = JSON.parse(localStorage.getItem(LS_CONV) || '[]');
 let curId = localStorage.getItem(LS_CUR) || null;
 let busy = false;            // 是否正在等待 AI 回复
@@ -469,6 +549,19 @@ let streamError = '';        // newma 回传的错误事件（type:"error"，无
 let pollStart = 0;
 let pollWs = '';             // 本轮轮询锁定的工作区（发送时捕获）
 let pendingWs = localStorage.getItem(LS_PEND) || '';   // 尚无会话时选中的工作区，随首条消息落到会话上
+let rafPending = false;      // 流式渲染合并到下一帧
+let elapsedTimer = null;     // 思考耗时计时器
+let searchQ = '';            // 会话搜索关键字
+let pollFails = 0;           // 连续轮询失败计数（断连检测）
+
+/* ============ Toast ============ */
+function toast(msg, type = '', ms = 3000) {
+  const box = document.createElement('div');
+  box.className = 'toast' + (type === 'err' ? ' err' : '');
+  box.textContent = msg;
+  $('#toasts').appendChild(box);
+  setTimeout(() => box.remove(), ms);
+}
 
 function api() { return localStorage.getItem(LS_API) || (location.protocol.startsWith('http') ? '' : 'http://127.0.0.1:3010'); }
 function cur() { return convs.find(c => c.id === curId) || null; }
@@ -508,7 +601,7 @@ function mdToHtml(src) {
   }
   return purify.sanitize(mdLib.parse(src));
 }
-function enhanceCode(root) {
+function enhanceCode(root, useHljs = true) {
   root.querySelectorAll('pre').forEach(pre => {
     if (pre.closest('.code-block')) return;
     const code = pre.querySelector('code');
@@ -524,13 +617,18 @@ function enhanceCode(root) {
       setTimeout(() => e.target.textContent = '复制', 1200);
     };
   });
-  if (window.hljs) root.querySelectorAll('pre code').forEach(c => { try { hljs.highlightElement(c); } catch(e){} });
+  // AI 回复里的链接一律新标签打开，避免把应用顶掉
+  root.querySelectorAll('a[href]').forEach(a => { a.target = '_blank'; a.rel = 'noopener'; });
+  if (useHljs && window.hljs) root.querySelectorAll('pre code').forEach(c => { try { hljs.highlightElement(c); } catch(e){} });
 }
 
 /* ============ 渲染 ============ */
 const chatEl = $('#chat'), scrollEl = $('#chat-scroll'), welcomeEl = $('#welcome');
 function nearBottom() { return scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 90; }
 function toBottom(force) { if (force || nearBottom()) scrollEl.scrollTop = scrollEl.scrollHeight; }
+function updateBottomBtn() { $('#btn-bottom').classList.toggle('show', !nearBottom()); }
+scrollEl.addEventListener('scroll', updateBottomBtn, { passive: true });
+$('#btn-bottom').onclick = () => { toBottom(true); updateBottomBtn(); };
 
 function renderAll() {
   const c = cur();
@@ -539,8 +637,8 @@ function renderAll() {
   chatEl.style.display = (c && c.messages.length) ? '' : 'none';
   $('#topbar-title').textContent = c ? c.title : 'Newma Chat';
   let lastBw = null, lastMsg = null;
-  if (c) c.messages.forEach(m => {
-    const bw = appendMsgDom(m.role, m.content);
+  if (c) c.messages.forEach((m, i) => {
+    const bw = appendMsgDom(m.role, m.content, i);
     if (m.role === 'assistant') { lastBw = bw; lastMsg = m; }
   });
   renderConvList();
@@ -550,7 +648,7 @@ function renderAll() {
   const last = c && c.messages[c.messages.length - 1];
   if (lastMsg && lastMsg === last && !busy) attachTurnUI(lastBw, lastMsg.content);
 }
-function appendMsgDom(role, content) {
+function appendMsgDom(role, content, idx = -1) {
   welcomeEl.style.display = 'none';
   chatEl.style.display = '';
   const wrap = document.createElement('div');
@@ -562,59 +660,189 @@ function appendMsgDom(role, content) {
     b.className = 'bubble';
     b.textContent = content;
     bw.appendChild(b);
+    // 用户消息悬浮操作：编辑并重发
+    const ops = document.createElement('div');
+    ops.className = 'msg-ops';
+    ops.style.justifyContent = 'flex-end';
+    const edit = document.createElement('button');
+    edit.textContent = '✎ 编辑';
+    edit.onclick = () => startEditUser(idx, bw, content);
+    ops.appendChild(edit);
+    bw.appendChild(ops);
   } else {
     const c = document.createElement('div');
     c.className = 'content';
     c.innerHTML = mdToHtml(content);
     bw.appendChild(c);
     enhanceCode(c);
+    attachCopyOps(bw, content);
   }
   chatEl.appendChild(wrap);
   toBottom();
   return bw;
 }
+
+/* 编辑用户消息：保存后截断其后内容并重发 */
+function startEditUser(idx, bw, content) {
+  if (busy) return toast('回复进行中，稍后再编辑', 'err');
+  const c = cur();
+  if (!c || idx < 0 || idx >= c.messages.length) return;
+  const bubble = bw.querySelector('.bubble');
+  const ops = bw.querySelector('.msg-ops');
+  if (!bubble) return;
+  bubble.style.display = 'none';
+  if (ops) ops.style.display = 'none';
+  const box = document.createElement('textarea');
+  box.className = 'edit-box';
+  box.value = content;
+  const row = document.createElement('div');
+  row.className = 'edit-row';
+  const cancel = document.createElement('button');
+  cancel.textContent = '取消';
+  cancel.onclick = () => { bubble.style.display = ''; if (ops) ops.style.display = ''; box.remove(); row.remove(); };
+  const save = document.createElement('button');
+  save.className = 'primary';
+  save.textContent = '保存并重发';
+  save.onclick = () => {
+    const v = box.value.trim();
+    if (!v) return;
+    c.messages.length = idx;          // 丢弃该消息及其后内容
+    box.remove(); row.remove();
+    send(v);                          // send 会重新入列并渲染
+  };
+  row.appendChild(cancel); row.appendChild(save);
+  bw.appendChild(box); bw.appendChild(row);
+  box.focus();
+  box.style.height = Math.min(box.scrollHeight + 2, 240) + 'px';
+  box.onkeydown = e => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); save.click(); }
+    if (e.key === 'Escape') cancel.click();
+  };
+}
+/* AI 消息悬浮操作：复制原文 */
+function attachCopyOps(bw, text) {
+  const ops = document.createElement('div');
+  ops.className = 'msg-ops';
+  const copy = document.createElement('button');
+  copy.textContent = '⧉ 复制';
+  copy.onclick = () => {
+    navigator.clipboard.writeText(typeof text === 'function' ? text() : text);
+    copy.textContent = '✓ 已复制';
+    setTimeout(() => copy.textContent = '⧉ 复制', 1200);
+  };
+  ops.appendChild(copy);
+  bw.appendChild(ops);
+}
 function showThinking() {
   const bw = appendMsgDom('ai', '');
-  bw.innerHTML = `<div class="thinking">Newma 正在思考<span class="dots"><span></span><span></span><span></span></span></div><div class="content" style="display:none"></div>`;
+  bw.innerHTML = `<div class="thinking">Newma 正在思考<span class="elapsed" data-s="0"></span><span class="dots"><span></span><span></span><span></span></span></div><div class="content" style="display:none"></div>`;
+  attachCopyOps(bw, () => streamText);
+  const el = bw.querySelector('.elapsed');
+  const t0 = Date.now();
+  elapsedTimer = setInterval(() => {
+    if (el.isConnected) el.textContent = ' ' + Math.floor((Date.now() - t0) / 1000) + 's';
+  }, 500);
   return bw;
 }
-/* 把正在流入的文本渲染进当前 AI 气泡 */
+/* 把正在流入的文本渲染进当前 AI 气泡（rAF 合帧 + 流式光标） */
 function renderStream() {
   if (!streamEl) return;
-  const th = streamEl.querySelector('.thinking');
-  if (th) th.remove();
-  let c = streamEl.querySelector('.content');
-  if (!c) { c = document.createElement('div'); c.className = 'content'; streamEl.appendChild(c); }
-  c.style.display = '';
-  c.innerHTML = mdToHtml(streamText);
-  enhanceCode(c);
-  toBottom();
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => {
+    rafPending = false;
+    if (!streamEl) return;
+    const th = streamEl.querySelector('.thinking');
+    if (th) { clearInterval(elapsedTimer); th.remove(); }
+    let c = streamEl.querySelector('.content');
+    if (!c) { c = document.createElement('div'); c.className = 'content'; streamEl.appendChild(c); }
+    c.style.display = '';
+    c.classList.add('streaming');
+    c.innerHTML = mdToHtml(streamText);
+    enhanceCode(c, false);   // 流式期间跳过高亮，完成后由 finishTurn 统一高亮
+    toBottom();
+  });
 }
+function exportConv(c) {
+  const md = ['# ' + c.title, '',
+    ...c.messages.map(m => (m.role === 'user' ? '**你：**' : '**Newma：**') + '\n\n' + m.content), ''].join('\n\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown;charset=utf-8' }));
+  a.download = (c.title || '会话').replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) + '.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('已导出 Markdown');
+}
+
 function renderConvList() {
   const list = $('#conv-list');
   list.innerHTML = '';
-  convs.forEach(c => {
+  const kw = searchQ.trim().toLowerCase();
+  convs.filter(c => !kw
+    || c.title.toLowerCase().includes(kw)
+    || c.messages.some(m => m.content.toLowerCase().includes(kw)))
+    .forEach(c => {
     const d = document.createElement('div');
     d.className = 'conv-item' + (c.id === curId ? ' active' : '');
-    d.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis">${c.title.replace(/</g,'&lt;')}</span><button class="del" title="删除">✕</button>`;
+    const titleSpan = document.createElement('span');
+    titleSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis';
+    titleSpan.textContent = c.title;
+    titleSpan.ondblclick = () => startRename(c, titleSpan);
+    d.appendChild(titleSpan);
+    const ops = document.createElement('span');
+    ops.className = 'ops';
+    const mk = (txt, tip, fn) => {
+      const b = document.createElement('button');
+      b.textContent = txt; b.title = tip; b.onclick = e => { e.stopPropagation(); fn(); };
+      ops.appendChild(b);
+    };
+    mk('✎', '重命名', () => startRename(c, titleSpan));
+    mk('↓', '导出 Markdown', () => exportConv(c));
+    d.appendChild(ops);
     if (c.ws) {
       const tag = document.createElement('span');
       tag.className = 'ws-tag';
       tag.textContent = '📁 ' + (wsBase(c.ws) || '默认');
       tag.title = c.ws;
-      d.insertBefore(tag, d.querySelector('.del'));
+      d.appendChild(tag);
     }
+    const del = document.createElement('button');
+    del.className = 'del'; del.title = '删除'; del.textContent = '✕';
+    d.appendChild(del);
     d.onclick = e => {
       if (e.target.classList.contains('del')) {
-        if (busy) return alert('回复进行中，稍后再删除会话');
+        if (busy) return toast('回复进行中，稍后再删除会话', 'err');
         convs = convs.filter(x => x.id !== c.id);
         if (curId === c.id) curId = convs.length ? convs[0].id : null;
         save(); renderAll(); return;
       }
-      curId = c.id; save(); renderAll();
+      if (curId !== c.id) { curId = c.id; save(); renderAll(); restoreDraft(); }
+      if (window.innerWidth <= 720) $('#sidebar').classList.add('hidden');
     };
     list.appendChild(d);
   });
+}
+
+/* 会话重命名：标题原位换成输入框 */
+function startRename(c, span) {
+  const input = document.createElement('input');
+  input.className = 'rename';
+  input.value = c.title;
+  span.replaceWith(input);
+  input.focus(); input.select();
+  const commit = () => {
+    const v = input.value.trim();
+    if (v) { c.title = v; save(); }
+    renderConvList();
+    if (c.id === curId) $('#topbar-title').textContent = c.title;
+  };
+  input.onkeydown = e => {
+    if (e.key === 'Enter') commit();
+    else if (e.key === 'Escape') renderConvList();
+    e.stopPropagation();
+  };
+  input.onblur = commit;
+  input.onclick = e => e.stopPropagation();
 }
 
 /* ============ 智能选项：识别 AI 给出的选项，点击回传 newma ============ */
@@ -719,9 +947,15 @@ async function health() {
       dot.className = 'srv-dot bad';
       label.textContent = ws ? '工作区未启动' : '服务异常';
     }
+    const hint = $('#welcome-hint');
+    hint.style.display = r.ok ? 'none' : '';
+    if (!r.ok) hint.textContent = '未连接 newma 服务 —— 请先在项目目录运行 ./start.sh';
   } catch (e) {
     dot.className = 'srv-dot bad';
     label.textContent = '服务未连接';
+    const hint = $('#welcome-hint');
+    hint.style.display = '';
+    hint.textContent = '未连接 newma 服务 —— 请先在项目目录运行 ./start.sh';
   }
 }
 
@@ -755,25 +989,53 @@ function consumeLine(line) {
 
 function finishTurn() {
   stopPoll();
+  clearInterval(elapsedTimer); elapsedTimer = null;
   const c = cur();
   if (streamEl) {
     const th = streamEl.querySelector('.thinking');
     if (th) th.remove();
+    const content = streamEl.querySelector('.content');
+    if (content) { content.classList.remove('streaming'); if (!streamText) content.style.display = 'none'; }
     if (streamError) {
       const e = document.createElement('div');
       e.className = 'err';
       e.textContent = streamError;
+      if (/401|令牌|token|api key|Unauthorized/i.test(streamError)) {
+        e.textContent += ' —— 请检查 ~/.kode/settings.json 里的 apiKey';
+      }
+      const retry = document.createElement('button');
+      retry.className = 'act-btn';
+      retry.style.marginTop = '6px';
+      retry.textContent = '🔁 重试';
+      retry.onclick = retryLast;
+      e.appendChild(document.createElement('br'));
+      e.appendChild(retry);
       streamEl.appendChild(e);
       toBottom();
     } else if (streamText && c) {
       c.messages.push({ role: 'assistant', content: streamText });
       save();
-      renderStream();
-      attachTurnUI(streamEl, streamText);
-    }
+      // 同步最终渲染（rAF 回调会因 streamEl 置空而跳过）
+      rafPending = false;
+      let cc = content;
+      if (!cc) { cc = document.createElement('div'); cc.className = 'content'; streamEl.appendChild(cc); }
+      cc.style.display = '';
+      cc.innerHTML = mdToHtml(streamText);
+      enhanceCode(cc);
+      attachTurnUI(streamEl, streamText);    }
   }
   streamEl = null; streamText = ''; streamError = '';
   setBusy(false);
+}
+
+/* 错误后重试：最后一条用户消息原样重发（不重复入列） */
+function retryLast() {
+  if (busy) return;
+  const c = cur();
+  if (!c) return;
+  const lastUser = [...c.messages].reverse().find(m => m.role === 'user');
+  if (!lastUser) return;
+  send(lastUser.content, { skipPush: true });
 }
 
 function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
@@ -781,12 +1043,21 @@ function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = nul
 async function pollStatus() {
   try {
     const r = await fetch(api() + '/api/status' + wsQ(pollWs), { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);   // 桥对死亡实例返回 503 等，也算断连
     const d = await r.json();
+    pollFails = 0;
     const buf = d.outputBuffer || [];
     for (let i = readIndex; i < buf.length; i++) consumeLine(buf[i]);
     readIndex = buf.length;
     if (Date.now() - pollStart > 10 * 60 * 1000) finishTurn();   // 10 分钟超时兜底
-  } catch (e) { /* 网络抖动，下个周期重试 */ }
+  } catch (e) {
+    // 连续失败视为断连：就地结算并提示，避免无限转圈
+    if (++pollFails >= 5 && busy) {
+      streamError = '连接中断，已停止接收（服务可能重启或网络异常）';
+      finishTurn();
+      toast('与 newma 服务的连接中断', 'err');
+    }
+  }
 }
 
 function setBusy(b) {
@@ -814,7 +1085,7 @@ async function send(text, opts = {}) {
     // skipPush：重新生成时用户消息已在会话里，不重复入列
     if (!opts.skipPush) c.messages.push({ role: 'user', content: text });
     save(); renderAll();
-    $('#prompt').value = ''; autoGrow();
+    saveDraft(''); $('#prompt').value = ''; autoGrow();
 
     // newma chat 模式单条独立处理：把近期历史拼进请求维持上下文；
     // /chat 前缀走命令路由强制聊天，避免带历史的消息被意图识别当成任务
@@ -833,7 +1104,9 @@ async function send(text, opts = {}) {
     }
 
     streamEl = showThinking(); streamText = ''; streamError = ''; toBottom(true);
+    pollFails = 0;
     setBusy(true);
+    updateBottomBtn();
 
     // 对齐服务器缓冲区基线后发送，避免吃到上一轮残留
     const s = await fetch(api() + '/api/status' + wsQ(pollWs), { signal: AbortSignal.timeout(6000) });
@@ -854,8 +1127,22 @@ async function send(text, opts = {}) {
     stopPoll();
     pollTimer = setInterval(pollStatus, 800);
   } catch (e) {
-    const bw = streamEl;
-    if (bw) { bw.innerHTML = `<div class="content"></div><div class="err">发送失败：${e.message || e}。请确认 newma --web 已启动（设置里可改地址）。</div>`; }
+    clearInterval(elapsedTimer); elapsedTimer = null;
+    const bw = streamEl || appendMsgDom('ai', '');
+    bw.innerHTML = '';
+    const cc = document.createElement('div');
+    cc.className = 'content';
+    const err = document.createElement('div');
+    err.className = 'err';
+    err.textContent = '发送失败：' + (e.message || e) + '。请确认 newma --web 已启动（设置里可改地址）。';
+    const retry = document.createElement('button');
+    retry.className = 'act-btn';
+    retry.style.marginTop = '6px';
+    retry.textContent = '🔁 重试';
+    retry.onclick = retryLast;
+    err.appendChild(document.createElement('br'));
+    err.appendChild(retry);
+    bw.appendChild(cc); bw.appendChild(err);
     streamEl = null; streamText = ''; streamError = '';
     setBusy(false);
   }
@@ -939,15 +1226,40 @@ async function showPlugins() {
 $('#btn-skills').onclick = showSkills;
 $('#btn-plugins').onclick = showPlugins;
 
+/* ============ 草稿 ============ */
+function drafts() { try { return JSON.parse(localStorage.getItem(LS_DRAFT) || '{}'); } catch (e) { return {}; } }
+function saveDraft(text) {
+  const d = drafts();
+  const key = curId || '_';
+  if (text) d[key] = text; else delete d[key];
+  localStorage.setItem(LS_DRAFT, JSON.stringify(d));
+}
+function restoreDraft() {
+  const v = drafts()[curId || '_'] || '';
+  promptEl.value = v;
+  autoGrow();
+}
+
 /* ============ 交互 ============ */
 const promptEl = $('#prompt');
 function autoGrow() { promptEl.style.height = 'auto'; promptEl.style.height = Math.min(promptEl.scrollHeight, 180) + 'px'; }
-promptEl.addEventListener('input', autoGrow);
+promptEl.addEventListener('input', () => { autoGrow(); saveDraft(promptEl.value); });
 promptEl.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(promptEl.value); }
 });
 $('#btn-send').onclick = () => {
-  if (busy) { finishTurn(); return; }   // 停止接收：立即结算当前气泡（服务端继续跑完）
+  if (busy) {
+    // 工作区会话：真停（newma /api/stop 会结束该实例进程，桥之后自动重启）
+    if (pollWs) {
+      const ws = pollWs;
+      fetch(api() + '/api/stop' + wsQ(ws), { method: 'POST', signal: AbortSignal.timeout(5000) })
+        .catch(() => {})
+        .finally(() => { toast('已发送停止请求，工作区实例将重启'); finishTurn(); });
+    } else {
+      finishTurn();   // 默认实例为共享服务，仅停止接收显示
+    }
+    return;
+  }
   send(promptEl.value);
 };
 document.querySelectorAll('.suggestion').forEach(b => b.onclick = () => send(b.textContent));
@@ -955,7 +1267,8 @@ $('#btn-newchat').onclick = () => {
   const c = { id: Date.now().toString(36), title: '新对话', messages: [], ws: pendingWs || undefined };
   pendingWs = '';
   localStorage.removeItem(LS_PEND);
-  convs.unshift(c); curId = c.id; save(); renderAll(); promptEl.focus();
+  convs.unshift(c); curId = c.id; save(); renderAll(); restoreDraft(); promptEl.focus();
+  if (window.innerWidth <= 720) $('#sidebar').classList.add('hidden');
 };
 $('#btn-side').onclick = () => $('#sidebar').classList.toggle('hidden');
 $('#btn-theme').onclick = () => {
@@ -1015,7 +1328,7 @@ function applyWs(path) {
   updateWsBtn(); renderConvList(); health();
   if (path) {
     // 预热实例，失败只提示不阻断（发消息时还会再 ensure）
-    ensureWs(path).then(() => health()).catch(e => alert('工作区启动失败：' + (e.message || e)));
+    ensureWs(path).then(() => health()).catch(e => toast('工作区启动失败：' + (e.message || e), 'err', 5000));
   }
 }
 $('#btn-ws').onclick = openWsModal;
@@ -1031,11 +1344,26 @@ $('#ws-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); $('#ws-add').click(); }
 });
 
+/* 搜索 / Esc / 离开保护 */
+$('#conv-search').addEventListener('input', e => { searchQ = e.target.value; renderConvList(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  for (const [mask, focus] of [['#ws-mask', '#prompt'], ['#modal-mask', '#prompt']]) {
+    const m = $(mask);
+    if (m.classList.contains('show')) { m.classList.remove('show'); $(focus)?.focus(); return; }
+  }
+  if (drawerEl.classList.contains('show')) closeDrawer();
+});
+window.addEventListener('beforeunload', e => {
+  if (busy) { e.preventDefault(); e.returnValue = ''; }
+});
+
 /* ============ 启动 ============ */
 if (localStorage.getItem(LS_THEME) === 'dark') document.documentElement.classList.add('dark');
 if (!curId && convs.length) curId = convs[0].id;
 renderAll();
 updateWsBtn();
+restoreDraft();
 health(); setInterval(health, 5000);
 
 // 加载 markdown 渲染库（CDN 失败则回退纯文本）

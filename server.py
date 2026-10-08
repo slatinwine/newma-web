@@ -218,6 +218,22 @@ class WorkspaceManager:
                         pass
                     del self.instances[ws]
 
+    def forget(self, ws):
+        """实例进程已退出（如 /api/stop），从表里移除以便下次重新拉起。"""
+        with self.lock:
+            ws = os.path.abspath(ws)
+            inst = self.instances.pop(ws, None)
+            return inst is not None
+
+    def kill_all(self):
+        with self.lock:
+            for inst in self.instances.values():
+                try:
+                    inst["proc"].kill()
+                except Exception:
+                    pass
+            self.instances.clear()
+
 
 WS = WorkspaceManager()
 
@@ -292,7 +308,12 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"error": f"工作区启动失败：{e}"}, 502)
                 return
-            return self._forward(f"127.0.0.1:{inst['port']}", data)
+            # /api/stop 会结束该实例进程；转发成功后从表里移除，下次自动重启
+            stopped = urlparse(self.path).path == "/api/stop"
+            host = f"127.0.0.1:{inst['port']}"
+            if stopped:
+                WS.forget(ws)
+            return self._forward(host, data)
         self._forward(NEWMA_HOST, data)
 
     def do_OPTIONS(self):
@@ -355,7 +376,14 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    import atexit
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 3010
+    atexit.register(WS.kill_all)   # 退出时回收所有工作区实例
     threading.Thread(target=_reaper, daemon=True).start()
     print(f"🌉 Newma Chat bridge: http://127.0.0.1:{port}/  (newma web 内部 {NEWMA_HOST}，工作区实例按需启动)")
-    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    try:
+        ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        WS.kill_all()
