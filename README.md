@@ -7,14 +7,20 @@
 
 ```bash
 cd ~/newma-web
-./start.sh          # 默认端口 3010，或 ./start.sh 8080
+python run.py        # 推荐：跨平台一键启动（默认端口 3010，或 python run.py 8080）
+./start.sh           # bash 环境（macOS/Linux/Git Bash）
 ```
+
+Windows 可直接双击 **start.bat**（等价于 `python run.py`）。
 
 浏览器打开 **http://127.0.0.1:3010/**
 
 > 首次对话报 404 时，是因为 newma 会把 baseUrl 误拼成 `/v4/v1/chat/completions`，
-> `start.sh` 已通过 `OPENAI_ENDPOINT` 环境变量修复。如换其他模型服务商，
-> 改 `~/.kode/settings.json` 后同步改 `start.sh` 里的端点。
+> `run.py` / `start.sh` 已通过 `OPENAI_ENDPOINT` 环境变量修复。如换其他模型服务商，
+> 改 `~/.kode/settings.json` 后同步改 `run.py` 里的 `DEFAULT_ENDPOINT`。
+
+> 调试工作区实例时设 `NEWMA_WS_LOG=1`，实例输出会写到 `.newma-logs/ws-<port>.log`。
+> 没装 newma 也能联调前端：`python tools/mock-newma.py 3011` 提供最小协议 mock。
 
 ## 结构
 

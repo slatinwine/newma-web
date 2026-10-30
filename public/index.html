@@ -949,13 +949,13 @@ async function health() {
     }
     const hint = $('#welcome-hint');
     hint.style.display = r.ok ? 'none' : '';
-    if (!r.ok) hint.textContent = '未连接 newma 服务 —— 请先在项目目录运行 ./start.sh';
+    if (!r.ok) hint.textContent = '未连接 newma 服务 —— 在项目目录运行 python run.py（Windows 可双击 start.bat）';
   } catch (e) {
     dot.className = 'srv-dot bad';
     label.textContent = '服务未连接';
     const hint = $('#welcome-hint');
     hint.style.display = '';
-    hint.textContent = '未连接 newma 服务 —— 请先在项目目录运行 ./start.sh';
+    hint.textContent = '未连接 newma 服务 —— 在项目目录运行 python run.py（Windows 可双击 start.bat）';
   }
 }
 

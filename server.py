@@ -149,7 +149,16 @@ class WorkspaceManager:
         else:
             cmd = [exe, "--web", "--web-port", str(port),
                    "--web-host", "127.0.0.1", "-d", ws]
-        kwargs = {"cwd": ws, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+        # 工作区实例日志（调试用）：设 NEWMA_WS_LOG=1 时把实例输出写到 .newma-logs/
+        if os.environ.get("NEWMA_WS_LOG") == "1":
+            log_dir = os.path.join(PROJ_DIR, ".newma-logs")
+            os.makedirs(log_dir, exist_ok=True)
+            log_fh = open(os.path.join(log_dir, f"ws-{port}.log"), "ab")
+            kwargs["stdout"] = log_fh
+            kwargs["stderr"] = subprocess.STDOUT
+        else:
+            kwargs["stdout"] = subprocess.DEVNULL
+            kwargs["stderr"] = subprocess.DEVNULL
         if os.name == "nt":
             kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
         try:
@@ -381,8 +390,20 @@ if __name__ == "__main__":
     atexit.register(WS.kill_all)   # 退出时回收所有工作区实例
     threading.Thread(target=_reaper, daemon=True).start()
     print(f"🌉 Newma Chat bridge: http://127.0.0.1:{port}/  (newma web 内部 {NEWMA_HOST}，工作区实例按需启动)")
+    # 主动探测端口（HTTPServer 默认 SO_REUSEADDR，Windows 下重复绑定不报错）
+    probe = socket.socket()
+    probe.settimeout(0.5)
+    try:
+        probe.bind(("127.0.0.1", port))
+    except OSError:
+        print(f"❌ 端口 {port} 已被占用。换个端口：python server.py {port + 10}")
+        sys.exit(1)
+    finally:
+        probe.close()
     try:
         ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    except OSError as e:
+        print(f"❌ 端口 {port} 无法监听（{e}）。可能已被占用，换个端口：python server.py {port + 10}")
     except KeyboardInterrupt:
         pass
     finally:

@@ -2,6 +2,7 @@
 .kode/
 .newma/
 plugins/
+.newma-logs/
 *.log
 nohup.out
 __pycache__/
